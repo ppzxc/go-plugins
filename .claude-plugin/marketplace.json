@@ -1,8 +1,10 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "go-skills",
   "owner": {
     "name": "ppzxc",
-    "email": "cjh8487@naver.com"
+    "email": "cjh8487@naver.com",
+    "url": "https://ppzxc.github.io"
   },
   "metadata": {
     "description": "Go skills marketplace — production-grade Go patterns and best practices",
@@ -11,13 +13,9 @@
   "plugins": [
     {
       "name": "modern-patterns",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/ppzxc/go-skills.git"
-      },
+      "source": "./plugins/modern-patterns",
       "description": "Production-grade Go patterns — error handling, concurrency, interfaces, testing, and resilience patterns",
-      "version": "0.0.1",
-      "strict": true
+      "version": "0.0.1"
     }
   ]
 }
