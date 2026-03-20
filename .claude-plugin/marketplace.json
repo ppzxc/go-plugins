@@ -1,11 +1,11 @@
 {
-  "name": "modern-go-pattern",
+  "name": "go-skills",
   "owner": {
     "name": "ppzxc",
     "email": "cjh8487@naver.com"
   },
   "metadata": {
-    "description": "Modern Go patterns and best practices skill",
+    "description": "Go skills marketplace — production-grade Go patterns and best practices",
     "version": "1.0.0"
   },
   "plugins": [
@@ -13,7 +13,7 @@
       "name": "modern-go-pattern",
       "source": {
         "source": "url",
-        "url": "https://github.com/ppzxc/modern-go-pattern.git"
+        "url": "https://github.com/ppzxc/go-skills.git"
       },
       "description": "Production-grade Go patterns — error handling, concurrency, interfaces, testing, and resilience patterns",
       "version": "0.0.1",
