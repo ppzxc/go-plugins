@@ -29,7 +29,7 @@ go-skills/
 ├── .claude-plugin/
 │   └── marketplace.json        # 마켓플레이스 메타데이터
 └── plugins/
-    └── go-coder/               # Modern Go 패턴 플러그인
+    └── go-coder/               # Production Go 패턴 플러그인
         ├── .claude-plugin/
         │   └── plugin.json
         └── skills/
