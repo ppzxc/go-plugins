@@ -1,3 +1,33 @@
+# go-coder Skill Rewrite Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Completely rewrite `SKILL.md` from 3-book/11-section topic-based layout to a 5-book/8-section practical scenario-based layout.
+
+**Architecture:** Single file rewrite — `plugins/go-coder/skills/go-coder/SKILL.md`. Each task writes one section. Tasks are sequential (each appends to the file). Final task adds Quick Decision Reference table and commits.
+
+**Tech Stack:** Markdown, Go code examples, 5 canonical Go books cited as `[GoBook]`, `[LearningGo]`, `[ConcurrencyInGo]`, `[Mistakes]`, `[CloudNative]`
+
+**Spec:** `docs/superpowers/specs/2026-03-24-go-coder-rewrite-design.md`
+
+---
+
+## File
+
+- **Rewrite:** `plugins/go-coder/skills/go-coder/SKILL.md`
+
+---
+
+## Task 1: Write Frontmatter and Introduction
+
+**Files:**
+- Rewrite: `plugins/go-coder/skills/go-coder/SKILL.md`
+
+- [ ] **Step 1: Overwrite SKILL.md with frontmatter and header**
+
+Write the following as the complete new content of `plugins/go-coder/skills/go-coder/SKILL.md`:
+
+```markdown
 ---
 name: go-coder
 description: "Use when writing, reviewing, or refactoring Go code in production services — error handling, concurrency, interfaces, testing, and resilience patterns."
@@ -15,7 +45,22 @@ A practical reference for production-grade Go, organized around the real-world d
 - **[CloudNative]** — *Cloud Native Go*, Matthew Titmus
 
 ---
+```
 
+- [ ] **Step 2: Verify file was written correctly**
+
+Read the file and confirm it has the frontmatter block, the title, the 5 book references, and the `---` separator.
+
+---
+
+## Task 2: Section 1 — Types & Interfaces
+
+**Files:**
+- Modify: `plugins/go-coder/skills/go-coder/SKILL.md` (append)
+
+- [ ] **Step 1: Append Section 1 to SKILL.md**
+
+```markdown
 ## 1. Types & Interfaces — [GoBook] Ch.6-7, [LearningGo] Ch.6-8, [Mistakes] #5-#8
 
 ### Accept Interfaces, Return Structs
@@ -92,7 +137,22 @@ func Sum[T Number](vals []T) T {
 ```
 
 ---
+```
 
+- [ ] **Step 2: Verify section was appended**
+
+Confirm Section 1 heading and code blocks appear at the end of the file.
+
+---
+
+## Task 3: Section 2 — Error Handling
+
+**Files:**
+- Modify: `plugins/go-coder/skills/go-coder/SKILL.md` (append)
+
+- [ ] **Step 1: Append Section 2 to SKILL.md**
+
+```markdown
 ## 2. Error Handling — [GoBook] Ch.5, [LearningGo] Ch.9, [Mistakes] #48-#53
 
 ### %w vs %v
@@ -102,7 +162,7 @@ func Sum[T Number](vals []T) T {
 return fmt.Errorf("query user %s: %w", id, err)
 
 // DON'T: %v breaks chain — callers cannot inspect cause
-return fmt.Errorf("query user: %v", err)  // errors.Is fails upstream
+return fmt.Errorf("query user %s: %v", err)  // errors.Is fails upstream
 ```
 
 ### errors.Is / errors.As
@@ -164,7 +224,20 @@ func NewWorker(fn func()) *Worker {
 ```
 
 ---
+```
 
+- [ ] **Step 2: Verify section was appended correctly**
+
+---
+
+## Task 4: Section 3 — Context
+
+**Files:**
+- Modify: `plugins/go-coder/skills/go-coder/SKILL.md` (append)
+
+- [ ] **Step 1: Append Section 3 to SKILL.md**
+
+```markdown
 ## 3. Context — [GoBook] Ch.8, [LearningGo] Ch.12, [Mistakes] #60-#63
 
 ### Rules
@@ -235,7 +308,20 @@ result, err := expensiveOp(ctx)
 ```
 
 ---
+```
 
+- [ ] **Step 2: Verify section was appended correctly**
+
+---
+
+## Task 5: Section 4 — Concurrency
+
+**Files:**
+- Modify: `plugins/go-coder/skills/go-coder/SKILL.md` (append)
+
+- [ ] **Step 1: Append Section 4 to SKILL.md**
+
+```markdown
 ## 4. Concurrency — [GoBook] Ch.8-9, [ConcurrencyInGo] Ch.2-5, [Mistakes] #57-#73
 
 ### Goroutine Lifecycle — [ConcurrencyInGo] Ch.4
@@ -297,7 +383,7 @@ func square(ctx context.Context, in <-chan int) <-chan int {
 // Fan-out: distribute work to N workers
 func fanOut(ctx context.Context, in <-chan Work, n int) []<-chan Result {
     channels := make([]<-chan Result, n)
-    for i := range n { channels[i] = process(ctx, in) }  // Go 1.22+: range over integer
+    for i := range n { channels[i] = process(ctx, in) }
     return channels
 }
 
@@ -332,7 +418,7 @@ func merge(ctx context.Context, channels ...<-chan Result) <-chan Result {
 // errgroup: parallel API calls — first error cancels all
 g, ctx := errgroup.WithContext(ctx)
 for _, url := range urls {
-    url := url  // capture range variable (required in Go < 1.22)
+    url := url
     g.Go(func() error { return fetch(ctx, url) })
 }
 if err := g.Wait(); err != nil { return err }
@@ -340,7 +426,7 @@ if err := g.Wait(); err != nil { return err }
 // WaitGroup: worker pool — must drain all jobs
 errCh := make(chan error, len(jobs))
 var wg sync.WaitGroup
-for range workers {  // Go 1.22+: range over integer
+for range workers {
     wg.Add(1)
     go func() {
         defer wg.Done()
@@ -352,7 +438,6 @@ for range workers {  // Go 1.22+: range over integer
     }()
 }
 go func() { wg.Wait(); close(errCh) }()
-// caller: for err := range errCh { ... }  // drain errors after goroutines finish
 ```
 
 ### Mutex vs Channel — [ConcurrencyInGo] Ch.2
@@ -416,7 +501,20 @@ func process(data []byte) string {
 ```
 
 ---
+```
 
+- [ ] **Step 2: Verify section was appended correctly**
+
+---
+
+## Task 6: Section 5 — Service Design
+
+**Files:**
+- Modify: `plugins/go-coder/skills/go-coder/SKILL.md` (append)
+
+- [ ] **Step 1: Append Section 5 to SKILL.md**
+
+```markdown
 ## 5. Service Design — [CloudNative] Ch.2-5, [LearningGo] Ch.14, [GoBook] Ch.10
 
 ### Project Structure
@@ -531,7 +629,20 @@ func NewPool(cfg Config) (*Pool, error)
 ```
 
 ---
+```
 
+- [ ] **Step 2: Verify section was appended correctly**
+
+---
+
+## Task 7: Section 6 — Testing
+
+**Files:**
+- Modify: `plugins/go-coder/skills/go-coder/SKILL.md` (append)
+
+- [ ] **Step 1: Append Section 6 to SKILL.md**
+
+```markdown
 ## 6. Testing — [LearningGo] Ch.13, [Mistakes] #82-#84
 
 ### Table-Driven Tests with t.Run
@@ -636,7 +747,20 @@ func BenchmarkParseUser(b *testing.B) {
 ```
 
 ---
+```
 
+- [ ] **Step 2: Verify section was appended correctly**
+
+---
+
+## Task 8: Section 7 — Resilience
+
+**Files:**
+- Modify: `plugins/go-coder/skills/go-coder/SKILL.md` (append)
+
+- [ ] **Step 1: Append Section 7 to SKILL.md**
+
+```markdown
 ## 7. Resilience — [CloudNative] Ch.5-8, [ConcurrencyInGo] Ch.5
 
 ### Retry with Exponential Backoff + Jitter — [CloudNative] Ch.7
@@ -670,7 +794,7 @@ type State int
 const (
     StateClosed   State = iota  // requests pass through
     StateOpen                    // requests rejected immediately
-    StateHalfOpen               // probing — note: this simplified example does not enforce single-probe semantics
+    StateHalfOpen               // one request allowed through to test
 )
 
 type CircuitBreaker struct {
@@ -773,7 +897,20 @@ mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 ```
 
 ---
+```
 
+- [ ] **Step 2: Verify section was appended correctly**
+
+---
+
+## Task 9: Section 8 — Performance & Pitfalls
+
+**Files:**
+- Modify: `plugins/go-coder/skills/go-coder/SKILL.md` (append)
+
+- [ ] **Step 1: Append Section 8 to SKILL.md**
+
+```markdown
 ## 8. Performance & Pitfalls — [Mistakes] #20-#29, #39, #47, #95-#97, [GoBook] Ch.3
 
 ### Slice — [Mistakes] #20-#24
@@ -877,7 +1014,20 @@ func compute() *Point { return &Point{X: 1, Y: 2} }  // heap-allocated (escapes)
 ```
 
 ---
+```
 
+- [ ] **Step 2: Verify section was appended correctly**
+
+---
+
+## Task 10: Quick Decision Reference + Final Commit
+
+**Files:**
+- Modify: `plugins/go-coder/skills/go-coder/SKILL.md` (append)
+
+- [ ] **Step 1: Append Quick Decision Reference table**
+
+```markdown
 ## Quick Decision Reference
 
 | Situation | Pattern | Source |
@@ -889,12 +1039,55 @@ func compute() *Point { return &Point{X: 1, Y: 2} }  // heap-allocated (escapes)
 | Worker pool, must drain all jobs | `WaitGroup + chan error` | [ConcurrencyInGo] Ch.4 |
 | Protect shared state | `sync.Mutex` | [ConcurrencyInGo] Ch.2 |
 | Transfer data ownership between goroutines | Channel | [ConcurrencyInGo] Ch.2 |
-| Many optional constructor params | Functional Options | [LearningGo] Ch.14 |
-| Config from file/env, >3 required fields | Config Struct | [LearningGo] Ch.14 |
+| Many optional constructor params | Functional Options | [LearningGo] Ch.13 |
+| Config from file/env, >3 required fields | Config Struct | [LearningGo] Ch.13 |
 | Single implementation constructor | Return concrete struct | [LearningGo] Ch.7 |
-| Multiple swappable implementations (exception) | Return interface | [LearningGo] Ch.7 |
+| Multiple swappable implementations | Return interface | [LearningGo] Ch.7 |
 | JSON API returns empty list | `make([]T, 0)` | [Mistakes] #22 |
 | Unstable downstream service | Circuit breaker | [CloudNative] Ch.8 |
 | Transient failures | Retry + exponential backoff + jitter | [CloudNative] Ch.7 |
 | Detect data races | `go test -race ./...` | [Mistakes] #58 |
 | Repeated string concatenation | `strings.Builder` | [Mistakes] #39 |
+```
+
+- [ ] **Step 2: Verify final SKILL.md structure**
+
+Read the file and confirm:
+- Frontmatter block present (name, description, user_invocable)
+- All 8 sections present with correct headings
+- Quick Decision Reference table at the end
+- No broken code blocks (every ` ``` ` has a matching close)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add plugins/go-coder/skills/go-coder/SKILL.md
+git commit -m "feat(go-coder): rewrite skill with 5-book practical scenario structure"
+```
+
+---
+
+## Verification
+
+After completing all tasks:
+
+1. Check file line count is significantly larger than the original 349 lines:
+   ```bash
+   wc -l plugins/go-coder/skills/go-coder/SKILL.md
+   ```
+
+2. Verify all 8 section headings are present:
+   ```bash
+   grep "^## " plugins/go-coder/skills/go-coder/SKILL.md
+   ```
+
+3. Verify all 5 book citations appear:
+   ```bash
+   grep -c "\[GoBook\]\|\[LearningGo\]\|\[ConcurrencyInGo\]\|\[Mistakes\]\|\[CloudNative\]" plugins/go-coder/skills/go-coder/SKILL.md
+   ```
+
+4. Install and invoke in Claude Code:
+   ```
+   /plugin install go-coder
+   /go-coder
+   ```
