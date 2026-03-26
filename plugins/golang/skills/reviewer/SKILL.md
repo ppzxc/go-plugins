@@ -14,50 +14,15 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
 
 ## Section 1: Error Handling Review
 
-### CHECK (things that must be present/correct)
+### CHECK
 
-- **Verify every error return is checked**: No unhandled error values from function calls [Mistakes#48]
-  ```go
-  // GOOD
-  f, err := os.Open(path)
-  if err != nil {
-      return fmt.Errorf("open config: %w", err)
-  }
-  ```
-
-- **Verify errors are wrapped with context**: Bare returns lose call-site information [Mistakes#49]
-  ```go
-  // GOOD
-  row, err := db.QueryRow(ctx, query, id)
-  if err != nil {
-      return fmt.Errorf("get user %d: %w", id, err)
-  }
-  ```
-
-- **Verify consistent wrapping strategy (%w vs %v)**: Use %w to preserve the chain, %v only to intentionally break it [Mistakes#50]
-  ```go
-  // GOOD — deliberate choice documented
-  return fmt.Errorf("validate input: %w", err)   // callers can errors.Is
-  return fmt.Errorf("internal: %v", err)          // hide implementation detail
-  ```
-
-- **Verify sentinel errors are package-level vars**: Sentinels declared inside functions are unreachable to callers [LearningGo#9]
-  ```go
-  // GOOD
-  var ErrNotFound = errors.New("not found")
-  var ErrConflict = errors.New("conflict")
-  ```
-
-- **Verify error messages are lowercase with no punctuation**: Error strings compose inside wrapping chains [CodeReview]
-  ```go
-  // GOOD
-  errors.New("connection refused")
-  fmt.Errorf("parse config: %w", err)
-  ```
+> These checks duplicate coder patterns. See `/golang:coder` Section 3 for full error handling rules with code examples.
+>
+> Verify: errors checked `[MUST]` · wrapped with %w `[SHOULD]` · consistent %w/%v strategy `[SHOULD]` · sentinels are package-level `[SHOULD]` · lowercase messages `[SHOULD]`
 
 ### FLAG (code smells to raise)
 
-- **Flag errors.New inside loops**: Allocates a new error value every iteration [Mistakes#48]
+- **[SHOULD] Flag errors.New inside loops**: Allocates a new error value every iteration [Mistakes#48]
   ```go
   // BAD — allocates on every iteration
   for _, v := range items {
@@ -65,7 +30,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   }
   ```
 
-- **Flag panic in library code**: Libraries must return errors, not crash the caller [EffectiveGo]
+- **[MUST] Flag panic in library code**: Libraries must return errors, not crash the caller [EffectiveGo]
   ```go
   // BAD — library function should not panic
   func Parse(data []byte) Config {
@@ -73,7 +38,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   }
   ```
 
-- **Flag logging AND returning the same error**: Produces duplicate noise in logs [Mistakes#49]
+- **[MUST] Flag logging AND returning the same error**: Produces duplicate noise in logs [Mistakes#49]
   ```go
   // BAD — caller will also log the returned error
   if err != nil {
@@ -82,7 +47,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   }
   ```
 
-- **Flag ignoring deferred Close() errors**: Write-path Close can fail and lose data [Mistakes#50]
+- **[SHOULD] Flag ignoring deferred Close() errors**: Write-path Close can fail and lose data [Mistakes#50]
   ```go
   // BAD — file write may be incomplete
   defer f.Close()
@@ -96,62 +61,22 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
 
 ## Section 2: Concurrency Safety
 
-### CHECK (things that must be present/correct)
+### CHECK
 
-- **Verify every goroutine has an exit path**: Context cancellation, channel close, or explicit signal [Concurrency#4]
-  ```go
-  // GOOD — goroutine exits when ctx is cancelled
-  go func() {
-      for { select { case <-ctx.Done(): return
-          case msg := <-ch: process(msg) } }
-  }()
-  ```
-
-- **Verify shared state has synchronization**: Every read/write to shared mutable data protected [Mistakes#58]
-  ```go
-  // GOOD
-  var mu sync.Mutex
-  mu.Lock()
-  counter++
-  mu.Unlock()
-  ```
-
-- **Verify WaitGroup.Add is called before goroutine launch**: Add inside goroutine races with Wait [Concurrency#3]
-  ```go
-  // GOOD
-  var wg sync.WaitGroup
-  wg.Add(len(items))
-  for _, item := range items {
-      go func(it Item) { defer wg.Done(); process(it) }(item)
-  }
-  wg.Wait()
-  ```
-
-- **Verify defer mu.Unlock() immediately after Lock()**: Gap between Lock and defer risks missing unlock on panic [Mistakes#69]
-  ```go
-  // GOOD
-  mu.Lock()
-  defer mu.Unlock()
-  return shared.value
-  ```
-
-- **Verify channel direction in function parameters**: Restrict to send-only or receive-only where possible [GoBook#8]
-  ```go
-  // GOOD — direction enforced by compiler
-  func produce(out chan<- int) { out <- 42 }
-  func consume(in <-chan int)  { v := <-in }
-  ```
+> These checks duplicate coder patterns. See `/golang:coder` Section 5 for full concurrency rules with code examples.
+>
+> Verify: goroutine exit path `[MUST]` · shared state synchronized `[MUST]` · WaitGroup.Add before goroutine `[MUST]` · defer Unlock after Lock `[MUST]` · channel direction in params `[SHOULD]`
 
 ### FLAG (code smells to raise)
 
-- **Flag unbuffered channel without guaranteed receiver**: Sender blocks forever if no goroutine reads [Concurrency#3]
+- **[MUST] Flag unbuffered channel without guaranteed receiver**: Sender blocks forever if no goroutine reads [Concurrency#3]
   ```go
   // BAD — if nobody reads ch, this goroutine leaks
   ch := make(chan int)
   go func() { ch <- expensiveCalc() }()
   ```
 
-- **Flag sync primitives copied by value**: Copying a mutex or WaitGroup breaks internal state [Mistakes#73]
+- **[MUST] Flag sync primitives copied by value**: Copying a mutex or WaitGroup breaks internal state [Mistakes#73]
   ```go
   // BAD — mu is copied, lock is meaningless
   type Cache struct{ mu sync.Mutex; data map[string]string }
@@ -159,7 +84,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   // Use pointer receiver: func (c *Cache) Get(...)
   ```
 
-- **Flag closure capturing loop variable in goroutine**: Variable is shared across iterations in Go < 1.22 [Mistakes#63]
+- **[MUST] Flag closure capturing loop variable in goroutine**: Variable is shared across iterations in Go < 1.22 [Mistakes#63]
   ```go
   // BAD — all goroutines see last value of v (Go < 1.22)
   for _, v := range items {
@@ -167,7 +92,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   }
   ```
 
-- **Flag mixing mutex and channel for same data**: Pick one synchronization mechanism per data path [Concurrency#4]
+- **[SHOULD] Flag mixing mutex and channel for same data**: Pick one synchronization mechanism per data path [Concurrency#4]
   ```go
   // BAD — two mechanisms guarding the same counter
   mu.Lock()
@@ -176,7 +101,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   ch <- counter // also sending through channel
   ```
 
-- **Flag blocking goroutine without select on context**: Goroutine cannot be cancelled [Concurrency#5]
+- **[MUST] Flag blocking goroutine without select on context**: Goroutine cannot be cancelled [Concurrency#5]
   ```go
   // BAD — no way to cancel this goroutine
   go func() {
@@ -185,7 +110,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   }()
   ```
 
-- **Flag goroutine launched without clear ownership**: Caller must know who stops it [Concurrency#4]
+- **[MUST] Flag goroutine launched without clear ownership**: Caller must know who stops it [Concurrency#4]
   ```go
   // BAD — fire and forget, no shutdown mechanism
   func StartProcessor() {
@@ -201,7 +126,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
 
 ### CHECK (things that must be present/correct)
 
-- **Verify MixedCaps with no underscores**: Go convention is MixedCaps or mixedCaps, never snake_case [CodeReview]
+- **[MUST] Verify MixedCaps with no underscores**: Go convention is MixedCaps or mixedCaps, never snake_case [CodeReview]
   ```go
   // GOOD
   type UserAccount struct{}
@@ -209,14 +134,14 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   func parseRequestBody() {}
   ```
 
-- **Verify short names for narrow scope**: Single-letter or abbreviated names for local variables with small scope [EffectiveGo]
+- **[SHOULD] Verify short names for narrow scope**: Single-letter or abbreviated names for local variables with small scope [EffectiveGo]
   ```go
   // GOOD — short scope, short name
   for i, v := range items { use(i, v) }
   func (s *Server) handleReq(w http.ResponseWriter, r *http.Request) {}
   ```
 
-- **Verify acronyms are all-caps**: HTTP, URL, ID, API, SQL — not Http, Url, Id [CodeReview]
+- **[MUST] Verify acronyms are all-caps**: HTTP, URL, ID, API, SQL — not Http, Url, Id [CodeReview]
   ```go
   // GOOD
   type HTTPClient struct{}
@@ -224,7 +149,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   func ServeHTTP(w http.ResponseWriter, r *http.Request) {}
   ```
 
-- **Verify package names are lowercase single words**: No underscores, no mixedCaps in package names [EffectiveGo]
+- **[MUST] Verify package names are lowercase single words**: No underscores, no mixedCaps in package names [EffectiveGo]
   ```go
   // GOOD
   package user
@@ -232,14 +157,14 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   package testhelper
   ```
 
-- **Verify single-method interfaces use -er suffix**: Reader, Writer, Closer, Formatter [EffectiveGo]
+- **[SHOULD] Verify single-method interfaces use -er suffix**: Reader, Writer, Closer, Formatter [EffectiveGo]
   ```go
   // GOOD
   type Validator interface { Validate() error }
   type Renderer interface  { Render(w io.Writer) error }
   ```
 
-- **Verify exported names have doc comments**: Every exported type, function, const, var needs a comment [CodeReview]
+- **[SHOULD] Verify exported names have doc comments**: Every exported type, function, const, var needs a comment [CodeReview]
   ```go
   // GOOD
   // UserStore persists user records to the database.
@@ -251,7 +176,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
 
 ### FLAG (code smells to raise)
 
-- **Flag name stuttering**: Package name should not repeat in exported identifiers [CodeReview]
+- **[SHOULD] Flag name stuttering**: Package name should not repeat in exported identifiers [CodeReview]
   ```go
   // BAD — callers write http.HTTPServer
   package http
@@ -260,56 +185,29 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   type Server struct{}
   ```
 
+- **[SHOULD] Flag //nolint without justification**: Every lint suppression must explain why [CodeReview]
+  ```go
+  // BAD — no reason given
+  //nolint:errcheck
+  f.Close()
+  // GOOD — explains the decision
+  //nolint:errcheck // best-effort cleanup, error logged at caller
+  f.Close()
+  ```
+
 ---
 
 ## Section 4: API Design
 
-### CHECK (things that must be present/correct)
+### CHECK
 
-- **Verify interfaces are defined at consumer side**: Consumer declares what it needs, not producer [Mistakes#5]
-  ```go
-  // GOOD — handler package defines only what it needs
-  package handler
-  type UserFinder interface { FindByID(ctx context.Context, id int) (User, error) }
-  ```
-
-- **Verify functions accept interfaces, return structs**: Accept narrow behavior, return concrete types [EffectiveGo]
-  ```go
-  // GOOD
-  func NewLogger(w io.Writer) *Logger {
-      return &Logger{out: w}
-  }
-  ```
-
-- **Verify functional options pattern for 3+ optional params**: Forward-compatible, self-documenting [Mistakes#11]
-  ```go
-  // GOOD
-  type Option func(*Server)
-  func WithPort(p int) Option  { return func(s *Server) { s.port = p } }
-  func WithTLS(cfg *tls.Config) Option { return func(s *Server) { s.tls = cfg } }
-  func NewServer(opts ...Option) *Server { s := &Server{}; for _, o := range opts { o(s) }; return s }
-  ```
-
-- **Verify context.Context is the first parameter**: Standard convention for all I/O-bound functions [CodeReview]
-  ```go
-  // GOOD
-  func (s *Store) GetUser(ctx context.Context, id int) (User, error) {
-      return s.db.QueryRow(ctx, query, id)
-  }
-  ```
-
-- **Verify error is the last return value**: Callers expect error in the final position [CodeReview]
-  ```go
-  // GOOD
-  func ReadConfig(path string) (Config, error) {
-      data, err := os.ReadFile(path)
-      return parseConfig(data), err
-  }
-  ```
+> These checks duplicate coder patterns. See `/golang:coder` Section 2 (interfaces), Section 4 (functions), Section 6 (context) for full rules with code examples.
+>
+> Verify: interfaces at consumer side `[SHOULD]` · accept interfaces/return structs `[SHOULD]` · functional options for 3+ optional params `[MAY]` · context.Context first param `[MUST]` · error last return `[MUST]`
 
 ### FLAG (code smells to raise)
 
-- **Flag interface with 5+ methods**: Large interfaces reduce substitutability and testability [Mistakes#5]
+- **[SHOULD] Flag interface with 5+ methods**: Large interfaces reduce substitutability and testability [Mistakes#5]
   ```go
   // BAD — too many methods, hard to mock
   type UserService interface {
@@ -322,7 +220,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   }
   ```
 
-- **Flag exported interface with single implementation**: Premature abstraction, test with concrete type instead [Mistakes#6]
+- **[SHOULD] Flag exported interface with single implementation**: Premature abstraction, test with concrete type instead [Mistakes#6]
   ```go
   // BAD — only one implementation exists, interface adds indirection
   type Notifier interface { Send(msg string) error }
@@ -336,76 +234,11 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
 
 ## Section 5: Performance Pitfalls
 
-### FLAG (code smells to raise)
+### FLAG
 
-- **Flag string concatenation in loops**: Use strings.Builder for O(n) instead of O(n²) [Mistakes#39]
-  ```go
-  // BAD — quadratic allocation
-  var s string
-  for _, v := range items {
-      s += v.String()
-  }
-  // GOOD: var b strings.Builder; for _, v := range items { b.WriteString(v.String()) }
-  ```
-
-- **Flag slice append without pre-allocation**: Known-size slices should use make with capacity [Mistakes#21]
-  ```go
-  // BAD — repeated reallocation
-  var result []User
-  for _, row := range rows {
-      result = append(result, toUser(row))
-  }
-  // GOOD: result := make([]User, 0, len(rows))
-  ```
-
-- **Flag map without size hint**: Large maps benefit from initial capacity [Mistakes#27]
-  ```go
-  // BAD — grows incrementally, triggers rehashing
-  m := make(map[string]int)
-  for _, item := range thousandItems {
-      m[item.Key] = item.Value
-  }
-  // GOOD: m := make(map[string]int, len(thousandItems))
-  ```
-
-- **Flag unnecessary pointer for small read-only structs**: Pointers add indirection and GC pressure for no benefit [Mistakes#95]
-  ```go
-  // BAD — 16-byte struct does not benefit from pointer
-  type Point struct{ X, Y float64 }
-  func distance(a, b *Point) float64 { /* ... */ }
-  // GOOD: func distance(a, b Point) float64 { /* ... */ }
-  ```
-
-- **Flag string/[]byte conversion in hot path**: Each conversion allocates a copy [Mistakes#46]
-  ```go
-  // BAD — allocates on every call in the loop
-  for _, s := range data {
-      hash.Write([]byte(s))
-  }
-  ```
-
-- **Flag defer in tight loops**: Defers stack until function returns, not iteration end [Mistakes#47]
-  ```go
-  // BAD — all defers stack until function exits
-  for _, path := range files {
-      f, _ := os.Open(path)
-      defer f.Close()
-      process(f)
-  }
-  // GOOD: wrap body in func() { f, _ := os.Open(path); defer f.Close(); process(f) }()
-  ```
-
-- **Flag range loop copying large values**: Range copies the element; use index or pointer [Mistakes#30]
-  ```go
-  // BAD — copies 4KB struct on every iteration
-  type BigStruct struct{ data [4096]byte }
-  for _, item := range bigSlice {
-      process(item)
-  }
-  // GOOD: for i := range bigSlice { process(&bigSlice[i]) }
-  ```
-
-> Cross-ref: See `/golang:tester` Section 6 for benchmarking these patterns.
+> Performance anti-patterns to flag during review. See `/golang:coder` Section 1 (pre-allocation) and Section 10 (performance) for DO rules with code examples.
+>
+> Flag: string concat in loops `[SHOULD]` · slice append without pre-alloc `[SHOULD]` · map without size hint `[SHOULD]` · unnecessary pointer for small structs `[SHOULD]` · string/[]byte conversion in hot path `[SHOULD]` · defer in tight loops `[SHOULD]` · range loop copying large values `[SHOULD]`
 
 ---
 
@@ -413,7 +246,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
 
 ### CHECK (things that must be present/correct)
 
-- **Verify user input is validated at boundary**: Validate and sanitize at the entry point, trust internally [LetsGo#11]
+- **[MUST] Verify user input is validated at boundary**: Validate and sanitize at the entry point, trust internally [LetsGo#11]
   ```go
   // GOOD — validate at handler, pass clean data inward
   func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -424,21 +257,22 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   }
   ```
 
-- **Verify SQL uses parameterized queries**: Never interpolate user input into query strings [LetsGo#4]
+- **[MUST] Verify SQL uses parameterized queries**: Never interpolate user input into query strings [LetsGo#4]
   ```go
   // GOOD — parameterized, safe from injection
   row := db.QueryRowContext(ctx, "SELECT name FROM users WHERE id = $1", userID)
   ```
 
-- **Verify file paths are sanitized with filepath.Clean**: Prevent path traversal attacks [GoBook#1]
+- **[MUST] Verify file paths are sanitized with filepath.Clean**: Prevent path traversal attacks [GoBook#1]
   ```go
   // GOOD — normalize and restrict to base directory
   clean := filepath.Clean(userInput)
   full := filepath.Join(baseDir, clean)
-  if !strings.HasPrefix(full, baseDir) { return ErrInvalidPath }
+  rel, err := filepath.Rel(baseDir, full)
+  if err != nil || strings.HasPrefix(rel, "..") { return ErrInvalidPath }
   ```
 
-- **Verify TLS for external connections**: All outbound traffic to external services must use TLS [CloudNative#8]
+- **[MUST] Verify TLS for external connections**: All outbound traffic to external services must use TLS [CloudNative#8]
   ```go
   // GOOD
   srv := &http.Server{
@@ -446,7 +280,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   }
   ```
 
-- **Verify secrets are not in source or logs**: No hardcoded tokens, passwords, or API keys [CloudNative#8]
+- **[MUST] Verify secrets are not in source or logs**: No hardcoded tokens, passwords, or API keys [CloudNative#8]
   ```go
   // GOOD — read from environment
   apiKey := os.Getenv("API_KEY")
@@ -460,7 +294,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
 
 ### CHECK (things that must be present/correct)
 
-- **Verify no circular dependencies**: Package A imports B and B imports A will not compile [GoBook#10]
+- **[MUST] Verify no circular dependencies**: Package A imports B and B imports A will not compile [GoBook#10]
   ```go
   // GOOD — one-way dependency, use interfaces to invert
   // package handler imports package service
@@ -468,7 +302,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   // handler defines its own interface for what it needs from service
   ```
 
-- **Verify internal/ is used for private packages**: Packages under internal/ are inaccessible outside the module [GoBook#10]
+- **[SHOULD] Verify internal/ is used for private packages**: Packages under internal/ are inaccessible outside the module [GoBook#10]
   ```go
   // GOOD project layout
   // myapp/
@@ -478,7 +312,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   //   pkg/httputil/response.go  ← public API (if needed)
   ```
 
-- **Verify one package per directory**: Multiple packages in one directory will not compile [EffectiveGo]
+- **[MUST] Verify one package per directory**: Multiple packages in one directory will not compile [EffectiveGo]
   ```go
   // GOOD
   // internal/user/store.go     → package user
@@ -486,7 +320,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
   // internal/order/service.go  → package order
   ```
 
-- **Verify cmd/ is used for entry points**: Each binary gets its own subdirectory under cmd/ [CloudNative#2]
+- **[SHOULD] Verify cmd/ is used for entry points**: Each binary gets its own subdirectory under cmd/ [CloudNative#2]
   ```go
   // GOOD
   // cmd/api/main.go      ← HTTP server binary
@@ -496,7 +330,7 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
 
 ### FLAG (code smells to raise)
 
-- **Flag side-effect import without comment**: Blank imports must explain why the side effect is needed [CodeReview]
+- **[SHOULD] Flag side-effect import without comment**: Blank imports must explain why the side effect is needed [CodeReview]
   ```go
   // BAD — no explanation for blank import
   import _ "net/http/pprof"
@@ -511,10 +345,10 @@ CHECK/FLAG review checklist for production Go. Every rule cites a canonical sour
 
 | Area | CHECK | FLAG |
 |---|---|---|
-| Errors | Checked, wrapped, lowercase | errors.New in loop, panic in lib, log+return |
-| Concurrency | Exit path, sync, WaitGroup.Add order | Unbuffered no reader, copied sync, loop var |
-| Naming | MixedCaps, acronyms, -er suffix | Stuttering |
-| API Design | Consumer interfaces, options pattern | 5+ method interface, single impl |
-| Performance | — | String concat loop, no pre-alloc, defer loop |
+| Errors | → coder §3 | errors.New in loop, panic in lib, log+return |
+| Concurrency | → coder §5 | Unbuffered no reader, copied sync, loop var |
+| Naming | MixedCaps, acronyms, -er suffix | Stuttering, //nolint without reason |
+| API Design | → coder §2/§4/§6 | 5+ method interface, single impl |
+| Performance | → coder §1/§10 | (see cross-ref summary) |
 | Security | Input validated, parameterized SQL, TLS | — |
 | Structure | No cycles, internal/, cmd/ | Uncommented blank import |
