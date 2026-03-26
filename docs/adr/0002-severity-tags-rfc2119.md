@@ -1,4 +1,7 @@
-# RFC 2119 기반 Severity Tags 도입
+# ADR-0002: RFC 2119 기반 Severity Tags 도입
+
+- **Status:** Accepted
+- **Date:** 2026-03-26
 
 ## Context and Problem Statement
 

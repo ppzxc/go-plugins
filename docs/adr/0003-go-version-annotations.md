@@ -1,4 +1,7 @@
-# Go Version Annotations 도입
+# ADR-0003: Go Version Annotations 도입
+
+- **Status:** Accepted
+- **Date:** 2026-03-26
 
 ## Context and Problem Statement
 

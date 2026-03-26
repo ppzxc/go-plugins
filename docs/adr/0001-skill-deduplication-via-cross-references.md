@@ -1,4 +1,7 @@
-# Skill 중복 제거를 위한 Cross-Reference 도입
+# ADR-0001: Skill 중복 제거를 위한 Cross-Reference 도입
+
+- **Status:** Accepted
+- **Date:** 2026-03-26
 
 ## Context and Problem Statement
 
