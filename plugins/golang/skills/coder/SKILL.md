@@ -1,5 +1,6 @@
 ---
 description: "Use when writing or refactoring Go production code — types, interfaces, error handling, concurrency, context, HTTP, service design, resilience, and performance patterns."
+version: "0.0.2"
 user_invocable: true
 ---
 
