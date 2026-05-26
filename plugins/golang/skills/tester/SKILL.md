@@ -1,7 +1,7 @@
 ---
-name: golang:tester
+name: tester
 description: "Use when writing, debugging, or improving Go tests — table-driven tests, benchmarks, fuzzing, mocks, integration tests, race detection, and coverage."
-version: "0.0.3"
+version: "0.0.4"
 user_invocable: true
 ---
 

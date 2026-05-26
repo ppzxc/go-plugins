@@ -1,7 +1,7 @@
 ---
-name: golang:coder
+name: coder
 description: "Use when writing or refactoring Go production code — types, interfaces, error handling, concurrency, context, HTTP, service design, resilience, and performance patterns."
-version: "0.0.3"
+version: "0.0.4"
 user_invocable: true
 ---
 
