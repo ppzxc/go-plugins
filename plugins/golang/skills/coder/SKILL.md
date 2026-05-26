@@ -1,7 +1,7 @@
 ---
 name: coder
-description: "Use when writing or refactoring Go production code — types, interfaces, error handling, concurrency, context, HTTP, service design, resilience, and performance patterns."
-version: "0.0.4"
+description: "Use when writing or refactoring Go production code — /golang:coder, \"Go coder\", \"Go coding\", \"Go refactoring\", \"Go 개발\", \"Go 구현\", \"Go 리팩토링\", types, interfaces, error handling, concurrency, context, HTTP, service design, resilience, and performance patterns."
+version: "0.0.5"
 user_invocable: true
 ---
 

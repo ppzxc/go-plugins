@@ -1,7 +1,7 @@
 ---
 name: reviewer
-description: "Use when reviewing Go code in pull requests or auditing Go codebases — checklists for error handling, concurrency safety, naming conventions, API design, performance pitfalls, security, and package structure."
-version: "0.0.4"
+description: "Use when reviewing Go code in pull requests or auditing Go codebases — /golang:reviewer, \"Go code review\", \"Go reviewer\", \"Go review\", \"Go audit\", \"Go 코드 리뷰\", \"Go 리뷰\", \"Go 검토\", checklists for error handling, concurrency safety, naming conventions, API design, performance pitfalls, security, and package structure."
+version: "0.0.5"
 user_invocable: true
 ---
 

@@ -6,7 +6,7 @@ A Claude Code plugin marketplace providing production-grade Go patterns and best
 
 | Plugin | Version | Description |
 |--------|---------|-------------|
-| [golang](./plugins/golang) | 0.0.4 | Production-grade Go patterns — coding, reviewing, and testing skills |
+| [golang](./plugins/golang) | 0.0.5 | Production-grade Go patterns — coding, reviewing, and testing skills |
 
 ## Installation
 

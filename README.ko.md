@@ -6,7 +6,7 @@ Claude Code 플러그인 마켓플레이스입니다. Production-grade Go 개발
 
 | 플러그인 | 버전 | 설명 |
 |---------|------|------|
-| [golang](./plugins/golang) | 0.0.4 | Production-grade Go 패턴 — 코딩, 리뷰, 테스트 스킬 |
+| [golang](./plugins/golang) | 0.0.5 | Production-grade Go 패턴 — 코딩, 리뷰, 테스트 스킬 |
 
 ## 설치
 

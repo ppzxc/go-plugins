@@ -15,7 +15,7 @@
       "name": "golang",
       "source": "./plugins/golang",
       "description": "Production-grade Go patterns — coding, reviewing, and testing skills",
-      "version": "0.0.4"
+      "version": "0.0.5"
     }
   ]
 }
